@@ -1,0 +1,23 @@
+services:
+  # Backend FastAPI Web Service
+  - type: web
+    name: file-converter-backend
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+
+  # Frontend Static Site
+  - type: web
+    name: file-converter-system
+    env: static
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: "frontend/dist"
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
