@@ -19,6 +19,10 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/(google[a-zA-Z0-9]+\\.html)",
+      "dest": "/frontend/$1"
+    },
+    {
       "src": "/sitemap.xml",
       "dest": "/frontend/sitemap.xml"
     },
