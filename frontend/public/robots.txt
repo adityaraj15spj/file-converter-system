@@ -1,0 +1,6 @@
+# Robots.txt for NITK File Converter System
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://file-converter-system.vercel.app/sitemap.xml

@@ -19,8 +19,20 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/sitemap.xml",
+      "dest": "/frontend/sitemap.xml"
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/frontend/robots.txt"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/frontend/assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "dest": "/frontend/index.html"
     }
   ]
 }
