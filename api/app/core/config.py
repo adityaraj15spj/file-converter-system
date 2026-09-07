@@ -53,12 +53,12 @@ class Settings:
     STAGE_DIR: str = _resolve_stage_dir()
     ALLOWED_EXTENSIONS: set = {".csv", ".arff", ".txt", ".data"}
 
-    # SMTP & Email Verification Settings
-    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    # SMTP & Email Verification Settings (Brevo / Gmail)
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp-relay.brevo.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
-    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "noreply@fileconverter.org")
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
     SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "File Converter System")
     SMTP_TLS: bool = os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes")
     OTP_EXPIRE_MINUTES: int = int(os.getenv("OTP_EXPIRE_MINUTES", "10"))
