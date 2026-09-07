@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "./components/Navbar";
 import UploadZone from "./components/UploadZone";
 import ParsingOptions from "./components/ParsingOptions";
@@ -9,8 +9,10 @@ import HistoryTable from "./components/HistoryTable";
 import AdminPanel from "./components/AdminPanel";
 import BenchmarkView from "./components/BenchmarkView";
 import AuthModal from "./components/AuthModal";
+import DataPreview from "./components/DataPreview";
+import Footer from "./components/Footer";
 import { api } from "./api";
-import { Sparkles, ArrowRight, Play, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, Play, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("converter");
@@ -30,6 +32,7 @@ export default function App() {
   });
 
   const [schemaAttributes, setSchemaAttributes] = useState([]);
+  const [sampleRows, setSampleRows] = useState([]);
   const [instanceCount, setInstanceCount] = useState(0);
   const [validationDefects, setValidationDefects] = useState([]);
   const [isInspecting, setIsInspecting] = useState(false);
@@ -44,12 +47,19 @@ export default function App() {
   const [sampleList, setSampleList] = useState([]);
 
   // Toast feedback
-  const [toast, setToast] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const showToast = useCallback((message, type = "success") => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev.slice(-2), { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.map(t => t.id === id ? { ...t, dismissing: true } : t));
+      setTimeout(() => {
+        setToasts((prev) => prev.filter(t => t.id !== id));
+      }, 300);
+    }, 4000);
+  }, []);
 
   // Initial load: Auth & Samples
   useEffect(() => {
@@ -84,6 +94,7 @@ export default function App() {
     setSelectedFile(file);
     setConversionResult(null);
     setValidationDefects([]);
+    setSampleRows([]);
 
     const text = await file.text();
     setFileContent(text);
@@ -126,9 +137,11 @@ export default function App() {
         setSchemaAttributes(res.attributes || []);
         setInstanceCount(res.instance_count || 0);
         setValidationDefects(res.defects || []);
+        setSampleRows(res.sample_rows || []);
       } else {
         setValidationDefects(res.defects || []);
         setSchemaAttributes([]);
+        setSampleRows([]);
       }
     } catch (err) {
       showToast(err.message || "Failed to inspect file schema.", "error");
@@ -191,15 +204,24 @@ export default function App() {
     }
   };
 
+  // Programmatic download — no page navigation
+  const triggerDownload = (url) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleDownload = () => {
     if (conversionResult && conversionResult.history_id) {
-      const downloadUrl = api.getDownloadUrl(conversionResult.history_id);
-      window.location.href = downloadUrl;
+      triggerDownload(api.getDownloadUrl(conversionResult.history_id));
     }
   };
 
   const handleDownloadHistoryItem = (historyId) => {
-    window.location.href = api.getDownloadUrl(historyId);
+    triggerDownload(api.getDownloadUrl(historyId));
   };
 
   const handleDeleteHistoryItem = async (historyId) => {
@@ -226,30 +248,16 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Toast banner */}
-      {toast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            padding: "14px 20px",
-            borderRadius: "12px",
-            background: toast.type === "error" ? "rgba(244, 63, 94, 0.95)" : "rgba(16, 185, 129, 0.95)",
-            color: "white",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-            fontWeight: 600,
-            fontSize: "0.88rem"
-          }}
-        >
-          {toast.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-          <span>{toast.message}</span>
-        </div>
-      )}
+      {/* Toast stack */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.type === "error" ? "toast-error" : "toast-success"} ${t.dismissing ? "dismissing" : ""}`}>
+            {t.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+            <span>{t.message}</span>
+            <div className="toast-progress" />
+          </div>
+        ))}
+      </div>
 
       {/* Navigation */}
       <Navbar
@@ -264,111 +272,145 @@ export default function App() {
         }}
       />
 
-      {/* MAIN VIEW: CONVERTER STUDIO */}
-      {activeTab === "converter" && (
-        <div>
-          {/* Hero Description */}
-          <div style={{ textAlign: "center", maxWidth: "780px", margin: "0 auto 32px auto" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "20px", background: "rgba(99, 102, 241, 0.12)", border: "1px solid rgba(99, 102, 241, 0.25)", color: "#a5b4fc", fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", marginBottom: "12px" }}>
-              <Sparkles size={14} />
-              <span>NITK Information Technology &bull; Data Preparation Utility</span>
+      {/* MAIN CONTENT AREA */}
+      <div className="app-main-content">
+        {/* MAIN VIEW: CONVERTER STUDIO */}
+        {activeTab === "converter" && (
+          <div>
+            {/* Hero Description */}
+            <div className="fade-in-up" style={{ textAlign: "center", maxWidth: "780px", margin: "0 auto 32px auto" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "20px", background: "rgba(99, 102, 241, 0.12)", border: "1px solid rgba(99, 102, 241, 0.25)", color: "#a5b4fc", fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", marginBottom: "12px" }}>
+                <Sparkles size={14} />
+                <span>NITK Information Technology &bull; Data Preparation Utility</span>
+              </div>
+              <h2 style={{ fontSize: "2.1rem", marginBottom: "10px", fontWeight: 800 }}>
+                Bidirectional CSV <span style={{ color: "var(--accent-indigo)" }}>&harr;</span> WEKA ARFF Engine
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
+                Lossless format conversion conforming strictly to RFC 4180 and WEKA 3.8+ specifications. Inspect inferred column types, customize nominal categories, and export verified datasets directly into the WEKA machine learning workbench.
+              </p>
             </div>
-            <h2 style={{ fontSize: "2.1rem", marginBottom: "10px", fontWeight: 800 }}>
-              Bidirectional CSV <span style={{ color: "var(--accent-indigo)" }}>&harr;</span> WEKA ARFF Engine
-            </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
-              Lossless format conversion conforming strictly to RFC 4180 and WEKA 3.8+ specifications. Inspect inferred column types, customize nominal categories, and export verified datasets directly into the WEKA machine learning workbench.
-            </p>
+
+            {/* Upload Zone */}
+            <div className="fade-in-up fade-in-up-delay-1">
+              <UploadZone
+                selectedFile={selectedFile}
+                onFileSelect={handleFileSelect}
+                sourceFormat={sourceFormat}
+                targetFormat={targetFormat}
+                onTargetFormatChange={setTargetFormat}
+                isInspecting={isInspecting}
+                onLoadSample={handleLoadSample}
+                sampleList={sampleList}
+              />
+            </div>
+
+            {/* Parsing Options */}
+            {selectedFile && (
+              <div className="fade-in-up fade-in-up-delay-2">
+                <ParsingOptions
+                  options={parsingOptions}
+                  onChange={(newOpts) => {
+                    setParsingOptions(newOpts);
+                    inspectDataset(selectedFile, sourceFormat, newOpts);
+                  }}
+                  sourceFormat={sourceFormat}
+                />
+              </div>
+            )}
+
+            {/* Validation Alerts (FR-014) */}
+            <ValidationAlerts defects={validationDefects} />
+
+            {/* Interactive Schema Review Table (FR-010) */}
+            {schemaAttributes.length > 0 && (
+              <div className="fade-in-up">
+                <SchemaReviewTable
+                  attributes={schemaAttributes}
+                  onAttributeChange={setSchemaAttributes}
+                  instanceCount={instanceCount}
+                />
+              </div>
+            )}
+
+            {/* Data Preview Table */}
+            {sampleRows.length > 0 && schemaAttributes.length > 0 && (
+              <DataPreview sampleRows={sampleRows} attributes={schemaAttributes} />
+            )}
+
+            {/* Execution Button */}
+            {selectedFile && (
+              <div className="fade-in-up" style={{ textAlign: "center", marginBottom: "32px" }}>
+                <button
+                  id="btn-execute-convert"
+                  className="btn btn-primary"
+                  onClick={handleExecuteConversion}
+                  disabled={isConverting}
+                  style={{ padding: "14px 36px", fontSize: "1.05rem", borderRadius: "14px" }}
+                >
+                  {isConverting ? (
+                    <>
+                      <span className="spinner" />
+                      <span>Converting Dataset...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} />
+                      <span>Convert to {targetFormat.toUpperCase()}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Output Preview Studio (FR-015, FR-016) */}
+            {conversionResult && (
+              <div className="fade-in-up">
+                <OutputPreview
+                  result={conversionResult}
+                  downloadUrl={api.getDownloadUrl(conversionResult.history_id)}
+                  onDownload={handleDownload}
+                />
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Upload Zone */}
-          <UploadZone
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            sourceFormat={sourceFormat}
-            targetFormat={targetFormat}
-            onTargetFormatChange={setTargetFormat}
-            isInspecting={isInspecting}
-            onLoadSample={handleLoadSample}
-            sampleList={sampleList}
-          />
+        {/* HISTORY TAB */}
+        {activeTab === "history" && (
+          <div className="fade-in-up">
+            <HistoryTable
+              historyItems={historyItems}
+              onDownloadItem={handleDownloadHistoryItem}
+              onDeleteItem={handleDeleteHistoryItem}
+              onClearAll={handleClearHistory}
+              isLoading={historyLoading}
+            />
+          </div>
+        )}
 
-          {/* Parsing Options */}
-          {selectedFile && (
-            <ParsingOptions
-              options={parsingOptions}
-              onChange={(newOpts) => {
-                setParsingOptions(newOpts);
-                inspectDataset(selectedFile, sourceFormat, newOpts);
+        {/* BENCHMARK SAMPLES TAB */}
+        {activeTab === "samples" && (
+          <div className="fade-in-up">
+            <BenchmarkView
+              onLoadSampleAndSwitch={(sampleId) => {
+                handleLoadSample(sampleId);
+                setActiveTab("converter");
               }}
-              sourceFormat={sourceFormat}
             />
-          )}
+          </div>
+        )}
 
-          {/* Validation Alerts (FR-014) */}
-          <ValidationAlerts defects={validationDefects} />
+        {/* ADMIN DASHBOARD TAB */}
+        {activeTab === "admin" && (
+          <div className="fade-in-up">
+            <AdminPanel />
+          </div>
+        )}
+      </div>
 
-          {/* Interactive Schema Review Table (FR-010) */}
-          {schemaAttributes.length > 0 && (
-            <SchemaReviewTable
-              attributes={schemaAttributes}
-              onAttributeChange={setSchemaAttributes}
-              instanceCount={instanceCount}
-            />
-          )}
-
-          {/* Execution Button */}
-          {selectedFile && (
-            <div style={{ textAlign: "center", marginBottom: "32px" }}>
-              <button
-                id="btn-execute-convert"
-                className="btn btn-primary"
-                onClick={handleExecuteConversion}
-                disabled={isConverting}
-                style={{ padding: "14px 36px", fontSize: "1.05rem", borderRadius: "14px" }}
-              >
-                <Play size={18} />
-                <span>{isConverting ? "Converting Dataset..." : `Convert to ${targetFormat.toUpperCase()}`}</span>
-              </button>
-            </div>
-          )}
-
-          {/* Output Preview Studio (FR-015, FR-016) */}
-          {conversionResult && (
-            <OutputPreview
-              result={conversionResult}
-              downloadUrl={api.getDownloadUrl(conversionResult.history_id)}
-              onDownload={handleDownload}
-            />
-          )}
-        </div>
-      )}
-
-      {/* HISTORY TAB */}
-      {activeTab === "history" && (
-        <HistoryTable
-          historyItems={historyItems}
-          onDownloadItem={handleDownloadHistoryItem}
-          onDeleteItem={handleDeleteHistoryItem}
-          onClearAll={handleClearHistory}
-          isLoading={historyLoading}
-        />
-      )}
-
-      {/* BENCHMARK SAMPLES TAB */}
-      {activeTab === "samples" && (
-        <BenchmarkView
-          onLoadSampleAndSwitch={(sampleId) => {
-            handleLoadSample(sampleId);
-            setActiveTab("converter");
-          }}
-        />
-      )}
-
-      {/* ADMIN DASHBOARD TAB */}
-      {activeTab === "admin" && (
-        <AdminPanel />
-      )}
+      {/* FOOTER */}
+      <Footer />
 
       {/* AUTH & PROFILE MODAL */}
       <AuthModal

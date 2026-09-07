@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 :root {
   --bg-primary: #0a0d14;
   --bg-secondary: #101522;
@@ -92,7 +95,88 @@ a:hover {
   color: #60a5fa;
 }
 
-/* Glassmorphic Card Container */
+/* ========================================================
+   ANIMATIONS
+   ======================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out both;
+}
+.fade-in-up {
+  animation: fadeInUp 0.45s ease-out both;
+}
+.fade-in-up-delay-1 { animation-delay: 0.1s; }
+.fade-in-up-delay-2 { animation-delay: 0.2s; }
+.fade-in-up-delay-3 { animation-delay: 0.3s; }
+
+/* ========================================================
+   LOADING SPINNER
+   ======================================================== */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.spinner-lg {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ========================================================
+   GLASSMORPHIC CARD
+   ======================================================== */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -106,7 +190,9 @@ a:hover {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Buttons */
+/* ========================================================
+   BUTTONS
+   ======================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -122,6 +208,20 @@ a:hover {
   transition: all 0.2s ease;
   text-decoration: none;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.btn:hover::after {
+  opacity: 1;
 }
 
 .btn-primary {
@@ -130,8 +230,12 @@ a:hover {
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
 }
 .btn-primary:disabled {
   opacity: 0.5;
@@ -145,8 +249,8 @@ a:hover {
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
 .btn-success:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
 }
 
 .btn-secondary {
@@ -157,6 +261,7 @@ a:hover {
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -167,6 +272,7 @@ a:hover {
 .btn-danger:hover {
   background: rgba(244, 63, 94, 0.25);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 .btn-sm {
@@ -175,7 +281,9 @@ a:hover {
   border-radius: var(--radius-sm);
 }
 
-/* Badges & Tags */
+/* ========================================================
+   BADGES & TAGS
+   ======================================================== */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -224,7 +332,9 @@ a:hover {
   border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
-/* Form Inputs */
+/* ========================================================
+   FORM INPUTS
+   ======================================================== */
 .input-field {
   width: 100%;
   background: rgba(15, 23, 42, 0.6);
@@ -247,14 +357,25 @@ select.input-field {
   cursor: pointer;
 }
 
-/* Layout container */
+/* ========================================================
+   LAYOUT
+   ======================================================== */
 .app-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 20px 80px 20px;
+  padding: 24px 20px 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Top Navigation Bar */
+.app-main-content {
+  flex: 1;
+}
+
+/* ========================================================
+   NAVBAR
+   ======================================================== */
 .navbar {
   display: flex;
   align-items: center;
@@ -266,6 +387,7 @@ select.input-field {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.4s ease-out both;
 }
 
 .brand {
@@ -370,7 +492,9 @@ select.input-field {
   color: var(--text-muted);
 }
 
-/* Drag & Drop Upload Zone */
+/* ========================================================
+   UPLOAD ZONE
+   ======================================================== */
 .upload-dropzone {
   border: 2px dashed rgba(99, 102, 241, 0.35);
   background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, rgba(16, 21, 34, 0.4) 100%);
@@ -378,9 +502,22 @@ select.input-field {
   padding: 44px 28px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+.upload-dropzone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.upload-dropzone:hover::before,
+.upload-dropzone.dragging::before {
+  opacity: 1;
 }
 .upload-dropzone:hover, .upload-dropzone.dragging {
   border-color: var(--accent-indigo);
@@ -399,6 +536,10 @@ select.input-field {
   align-items: center;
   justify-content: center;
   color: #818cf8;
+  transition: transform 0.3s ease;
+}
+.upload-dropzone:hover .upload-icon-wrapper {
+  transform: scale(1.08);
 }
 
 /* Format Banner (FR-006) */
@@ -436,7 +577,9 @@ select.input-field {
   border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
-/* Data Table Styling */
+/* ========================================================
+   DATA TABLE
+   ======================================================== */
 .table-container {
   overflow-x: auto;
   border-radius: var(--radius-md);
@@ -458,17 +601,31 @@ table.custom-table th {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 table.custom-table td {
   padding: 12px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
 }
+table.custom-table tr {
+  transition: background 0.15s ease;
+}
 table.custom-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-/* Preview Box */
+.cell-missing {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ========================================================
+   CODE PREVIEW
+   ======================================================== */
 .code-preview {
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -483,7 +640,9 @@ table.custom-table tr:hover td {
   white-space: pre;
 }
 
-/* Alerts and Line Level Defects (FR-014) */
+/* ========================================================
+   VALIDATION ALERTS (FR-014)
+   ======================================================== */
 .defect-card {
   display: flex;
   gap: 12px;
@@ -493,6 +652,7 @@ table.custom-table tr:hover td {
   border: 1px solid rgba(244, 63, 94, 0.25);
   margin-bottom: 10px;
   align-items: flex-start;
+  animation: fadeInUp 0.3s ease-out both;
 }
 .defect-card .line-badge {
   background: rgba(244, 63, 94, 0.2);
@@ -505,7 +665,9 @@ table.custom-table tr:hover td {
   white-space: nowrap;
 }
 
-/* Modal Overlay */
+/* ========================================================
+   MODAL
+   ======================================================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -527,14 +689,12 @@ table.custom-table tr:hover td {
   max-width: 480px;
   padding: 28px;
   position: relative;
+  animation: fadeInUp 0.25s ease-out both;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Stat Grid */
+/* ========================================================
+   STATS GRID
+   ======================================================== */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -546,6 +706,11 @@ table.custom-table tr:hover td {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 18px 20px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
 }
 .stat-card .label {
   font-size: 0.78rem;
@@ -560,4 +725,263 @@ table.custom-table tr:hover td {
   font-weight: 800;
   color: var(--text-primary);
   font-family: var(--font-mono);
+}
+
+/* ========================================================
+   TOAST NOTIFICATION
+   ======================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+  font-size: 0.88rem;
+  pointer-events: auto;
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backdrop-filter: blur(12px);
+}
+
+.toast.dismissing {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, 0.92);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.toast-error {
+  background: rgba(244, 63, 94, 0.92);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0 0 14px 14px;
+  animation: toast-progress-shrink 4s linear forwards;
+}
+
+@keyframes toast-progress-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* ========================================================
+   FOOTER
+   ======================================================== */
+.app-footer {
+  margin-top: 48px;
+  padding: 32px 0 0 0;
+  border-top: 1px solid var(--border-subtle);
+  animation: fadeInUp 0.5s ease-out both;
+  animation-delay: 0.2s;
+}
+
+.footer-inner {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 32px;
+  padding-bottom: 28px;
+}
+
+.footer-brand {}
+
+.footer-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.footer-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--gradient-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.footer-logo-text {
+  font-weight: 800;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #fff 40%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.footer-description {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 340px;
+}
+
+.footer-links-group h4 {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.footer-links-group a,
+.footer-links-group span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  transition: color 0.15s ease;
+}
+
+.footer-links-group a:hover {
+  color: var(--text-primary);
+}
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.footer-heart {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.heart-icon {
+  color: var(--accent-rose);
+  fill: var(--accent-rose);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ========================================================
+   RESPONSIVE — TABLET
+   ======================================================== */
+@media (max-width: 900px) {
+  .navbar {
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .nav-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ========================================================
+   RESPONSIVE — MOBILE
+   ======================================================== */
+@media (max-width: 600px) {
+  .app-container {
+    padding: 12px 12px 32px 12px;
+  }
+
+  .navbar {
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    margin-bottom: 20px;
+  }
+
+  .brand-text h1 {
+    font-size: 0.95rem;
+  }
+
+  .nav-tab {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .upload-dropzone {
+    padding: 28px 16px;
+  }
+
+  .upload-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .glass-panel {
+    border-radius: var(--radius-md);
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .format-banner {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .modal-card {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  h2 {
+    font-size: 1.5rem !important;
+  }
 }

@@ -48,6 +48,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ full_name, email, password, role }),
     }),
+  verifyOtp: (email, otp) =>
+    apiRequest("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+    }),
+  resendOtp: (email) =>
+    apiRequest("/auth/resend-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
   getMe: () => apiRequest("/auth/me"),
   updateProfile: (full_name) =>
     apiRequest("/auth/profile", {

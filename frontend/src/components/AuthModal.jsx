@@ -1,5 +1,19 @@
-import React, { useState } from "react";
-import { X, Lock, Mail, User, KeyRound, AlertCircle, CheckCircle2, UserCheck, Shield } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Lock,
+  Mail,
+  User,
+  KeyRound,
+  AlertCircle,
+  CheckCircle2,
+  UserCheck,
+  Shield,
+  Send,
+  RefreshCw,
+  ArrowLeft,
+  Check
+} from "lucide-react";
 import { api } from "../api";
 
 export default function AuthModal({
@@ -17,6 +31,12 @@ export default function AuthModal({
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("Student");
 
+  // OTP Verification state
+  const [otp, setOtp] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [devOtpPreview, setDevOtpPreview] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   // Profile fields
   const [editName, setEditName] = useState(currentUser?.full_name || "");
   const [currPassword, setCurrPassword] = useState("");
@@ -26,18 +46,38 @@ export default function AuthModal({
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Countdown timer for OTP resend cooldown
+  useEffect(() => {
+    let interval = null;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendCooldown]);
+
   const handleSignIn = async (e, customEmail, customPassword) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMsg("");
+    const targetEmail = customEmail || email;
+    const targetPass = customPassword || password;
     try {
-      const res = await api.login(customEmail || email, customPassword || password);
+      const res = await api.login(targetEmail, targetPass);
       localStorage.setItem("token", res.access_token);
       onLoginSuccess(res.user);
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to sign in.");
+      const msg = err.message || "Failed to sign in.";
+      setError(msg);
+      // If user hasn't verified, give them option to jump to OTP verification
+      if (msg.toLowerCase().includes("not been verified") || msg.toLowerCase().includes("verification code")) {
+        setOtpEmail(targetEmail);
+      }
     } finally {
       setLoading(false);
     }
@@ -50,11 +90,61 @@ export default function AuthModal({
     setSuccessMsg("");
     try {
       const res = await api.register(fullName, email, password, role);
+      if (res.requires_otp) {
+        setOtpEmail(res.email || email);
+        setDevOtpPreview(res.otp_preview || "");
+        setOtp("");
+        setTab("verify_otp");
+        setResendCooldown(60);
+        setSuccessMsg(res.message || "Verification code dispatched to your email!");
+      } else {
+        localStorage.setItem("token", res.access_token);
+        onLoginSuccess(res.user);
+        onClose();
+      }
+    } catch (err) {
+      setError(err.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length !== 6) {
+      setError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const res = await api.verifyOtp(otpEmail, cleanOtp);
       localStorage.setItem("token", res.access_token);
       onLoginSuccess(res.user);
       onClose();
     } catch (err) {
-      setError(err.message || "Registration failed.");
+      setError(err.message || "Verification failed. Please check the code and try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const res = await api.resendOtp(otpEmail);
+      setSuccessMsg(res.message || "A new verification code has been dispatched.");
+      if (res.otp_preview) {
+        setDevOtpPreview(res.otp_preview);
+      }
+      setResendCooldown(60);
+    } catch (err) {
+      setError(err.message || "Failed to resend code.");
     } finally {
       setLoading(false);
     }
@@ -132,7 +222,7 @@ export default function AuthModal({
 
         {/* Tab selector */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "12px" }}>
-          {!currentUser ? (
+          {!currentUser && tab !== "verify_otp" ? (
             <>
               <button
                 className={`btn btn-sm ${tab === "signin" ? "btn-primary" : "btn-secondary"}`}
@@ -147,6 +237,11 @@ export default function AuthModal({
                 Register (FR-001)
               </button>
             </>
+          ) : tab === "verify_otp" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Mail size={18} color="var(--accent-blue)" />
+              <strong style={{ fontSize: "1rem" }}>Email OTP Verification</strong>
+            </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <UserCheck size={18} color="var(--accent-emerald)" />
@@ -156,15 +251,26 @@ export default function AuthModal({
         </div>
 
         {error && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "8px", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", marginBottom: "16px" }}>
-            <AlertCircle size={16} />
-            <span>{error}</span>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", padding: "10px 14px", borderRadius: "8px", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", marginBottom: "16px" }}>
+            <AlertCircle size={16} style={{ marginTop: "2px", flexShrink: 0 }} />
+            <div>
+              <div>{error}</div>
+              {otpEmail && tab === "signin" && error.toLowerCase().includes("not been verified") && (
+                <button
+                  type="button"
+                  onClick={() => { setTab("verify_otp"); setError(""); }}
+                  style={{ marginTop: "6px", background: "none", border: "none", color: "#60a5fa", fontSize: "0.82rem", textDecoration: "underline", cursor: "pointer", padding: 0 }}
+                >
+                  Enter Verification Code &rarr;
+                </button>
+              )}
+            </div>
           </div>
         )}
 
         {successMsg && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "8px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", color: "#6ee7b7", fontSize: "0.82rem", marginBottom: "16px" }}>
-            <CheckCircle2 size={16} />
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
             <span>{successMsg}</span>
           </div>
         )}
@@ -269,7 +375,7 @@ export default function AuthModal({
 
             <div style={{ marginBottom: "12px" }}>
               <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "6px" }}>
-                Email Address
+                Email Address (OTP will be sent here)
               </label>
               <input
                 type="email"
@@ -307,9 +413,150 @@ export default function AuthModal({
             </div>
 
             <button id="btn-submit-signup" type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account & Sign In"}
+              <Send size={15} />
+              <span>{loading ? "Sending OTP..." : "Create Account & Send OTP"}</span>
             </button>
           </form>
+        )}
+
+        {/* OTP VERIFICATION VIEW */}
+        {tab === "verify_otp" && !currentUser && (
+          <div>
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "rgba(56, 189, 248, 0.15)",
+                border: "1px solid rgba(56, 189, 248, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px auto",
+                color: "var(--accent-blue)"
+              }}>
+                <Mail size={24} />
+              </div>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 6px 0", color: "var(--text-primary)" }}>
+                Verify Your Email Address
+              </h3>
+              <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)", margin: 0 }}>
+                We sent a 6-digit verification code to:
+              </p>
+              <div style={{
+                display: "inline-block",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "var(--accent-blue)",
+                marginTop: "6px"
+              }}>
+                {otpEmail}
+              </div>
+            </div>
+
+            {/* Dev / Demo mode auto-fill banner */}
+            {devOtpPreview && (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                background: "rgba(14, 165, 233, 0.1)",
+                border: "1px solid rgba(14, 165, 233, 0.3)",
+                marginBottom: "18px"
+              }}>
+                <div>
+                  <div style={{ fontSize: "0.74rem", textTransform: "uppercase", fontWeight: 700, color: "#38bdf8" }}>
+                    Demo Mode OTP:
+                  </div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, letterSpacing: "3px", color: "#ffffff", fontFamily: "monospace" }}>
+                    {devOtpPreview}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setOtp(devOtpPreview)}
+                  style={{ fontSize: "0.78rem" }}
+                >
+                  Auto-fill Code
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleVerifyOtp}>
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "8px", textAlign: "center" }}>
+                  Enter 6-Digit Code
+                </label>
+                <input
+                  id="input-otp-code"
+                  type="text"
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  placeholder="······"
+                  className="input-field"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  style={{
+                    fontSize: "1.8rem",
+                    letterSpacing: "14px",
+                    textAlign: "center",
+                    fontWeight: "700",
+                    fontFamily: "monospace",
+                    padding: "10px",
+                    borderColor: otp.length === 6 ? "var(--accent-emerald)" : "var(--border-subtle)"
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                id="btn-verify-otp"
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: "100%", marginBottom: "14px" }}
+                disabled={loading || otp.trim().length !== 6}
+              >
+                {loading ? "Verifying Code..." : "Verify Code & Activate Account"}
+              </button>
+            </form>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-subtle)", paddingTop: "14px" }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setTab("signup");
+                  setError("");
+                  setSuccessMsg("");
+                }}
+                style={{ fontSize: "0.8rem" }}
+              >
+                <ArrowLeft size={14} /> Back / Edit Info
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleResendOtp}
+                disabled={resendCooldown > 0 || loading}
+                style={{ fontSize: "0.8rem" }}
+              >
+                <RefreshCw size={14} className={loading ? "spin" : ""} />
+                <span>
+                  {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : "Resend Code"}
+                </span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* PROFILE VIEW (LOGGED IN) */}
