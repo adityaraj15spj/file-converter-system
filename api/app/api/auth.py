@@ -1,5 +1,6 @@
 import datetime
 import secrets
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -9,6 +10,8 @@ from app.db.models import User, EmailOTP
 from app.core.config import settings
 from app.core.email import send_otp_email
 from app.core.security import verify_password, get_password_hash, create_access_token, get_current_user
+
+logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter(prefix="/auth", tags=["Authentication & User Management"])
 
