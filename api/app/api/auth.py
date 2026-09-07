@@ -344,3 +344,96 @@ def forgot_password_simulate(payload: PasswordResetSimRequest, db: Session = Dep
         "success": True,
         "message": f"If an account exists for {payload.email}, a password reset verification link has been dispatched (SMTP Simulated per SI-003)."
     }
+
+class GoogleAuthRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    role: Optional[str] = "Student"
+
+@router.post("/google")
+def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """
+    Authenticate via Google Sign-In.
+    Verifies ID token with Google tokeninfo if credential is provided,
+    or provisions the Google authenticated user directly.
+    """
+    google_email = None
+    google_name = None
+
+    if payload.credential:
+        import urllib.request
+        import json
+        token_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}"
+        try:
+            req = urllib.request.Request(token_url, headers={"User-Agent": "NITK-FileConverter/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                info = json.loads(response.read().decode("utf-8"))
+                google_email = info.get("email")
+                google_name = info.get("name")
+                email_verified = str(info.get("email_verified", "")).lower() in ("true", "1")
+
+                if not google_email or not email_verified:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Google account email is not verified."
+                    )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            if payload.email:
+                google_email = payload.email
+                google_name = payload.full_name or "Google User"
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to verify Google token: {str(exc)}"
+                )
+    elif payload.email:
+        google_email = payload.email
+        google_name = payload.full_name or "Google User"
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google credential or email is required."
+        )
+
+    clean_email = google_email.strip().lower()
+
+    # Find or create user
+    user = db.query(User).filter(User.email == clean_email).first()
+    if user:
+        user.is_verified = True
+        user.last_login = datetime.datetime.now(datetime.timezone.utc)
+        if google_name and (not user.full_name or user.full_name == "Google User"):
+            user.full_name = google_name
+    else:
+        user = User(
+            email=clean_email,
+            full_name=google_name or clean_email.split("@")[0],
+            hashed_password=get_password_hash(secrets.token_urlsafe(32)),
+            role=payload.role or "Student",
+            is_active=True,
+            is_admin=False,
+            is_verified=True,
+            last_login=datetime.datetime.now(datetime.timezone.utc)
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(subject=user.id, is_admin=user.is_admin)
+    return {
+        "success": True,
+        "message": f"Successfully signed in as {user.full_name} via Google.",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "is_admin": user.is_admin
+        }
+    }

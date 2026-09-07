@@ -58,6 +58,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
+  googleAuth: (payload) =>
+    apiRequest("/auth/google", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getMe: () => apiRequest("/auth/me"),
   updateProfile: (full_name) =>
     apiRequest("/auth/profile", {

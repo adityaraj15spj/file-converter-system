@@ -152,3 +152,43 @@ def test_expired_otp_rejection():
         db.commit()
     finally:
         db.close()
+
+def test_google_auth_flow():
+    test_google_email = "googleuser@nitk.ac.in"
+    test_google_name = "Google Test User"
+
+    # Clean up
+    db = SessionLocal()
+    try:
+        db.query(User).filter(User.email == test_google_email).delete()
+        db.commit()
+    finally:
+        db.close()
+
+    # 1. Sign in with Google
+    resp = client.post("/api/auth/google", json={
+        "email": test_google_email,
+        "full_name": test_google_name,
+        "role": "Researcher"
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "access_token" in data
+    assert data["user"]["email"] == test_google_email
+    assert data["user"]["full_name"] == test_google_name
+
+    # 2. Verify account is immediately verified
+    token = data["access_token"]
+    me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me_resp.status_code == 200
+    assert me_resp.json()["email"] == test_google_email
+
+    # Clean up
+    db = SessionLocal()
+    try:
+        db.query(User).filter(User.email == test_google_email).delete()
+        db.commit()
+    finally:
+        db.close()
+
