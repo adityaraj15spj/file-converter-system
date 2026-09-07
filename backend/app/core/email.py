@@ -130,12 +130,13 @@ Enter this code in the application to activate your account.
 If you did not request this email, please ignore it.
 """
 
+    smtp_user = settings.SMTP_USER.strip()
+    smtp_pass = settings.SMTP_PASSWORD.replace(" ", "").strip()
+
     # Check if SMTP is configured
-    if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
+    if settings.SMTP_HOST and smtp_user and smtp_pass:
         try:
-            from_email = settings.SMTP_FROM_EMAIL
-            if not from_email or from_email == "noreply@fileconverter.org":
-                from_email = settings.SMTP_USER or "noreply@fileconverter.org"
+            from_email = settings.SMTP_FROM_EMAIL.strip() or smtp_user
 
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
@@ -153,7 +154,7 @@ If you did not request this email, please ignore it.
                     server.starttls()
 
             with server:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.login(smtp_user, smtp_pass)
                 server.sendmail(from_email, [to_email], msg.as_string())
 
             logger.info(f"[EMAIL] Verification OTP email successfully dispatched via SMTP to {to_email}")
