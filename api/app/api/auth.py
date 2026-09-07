@@ -98,21 +98,25 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     db.commit()
 
-    # Send verification email via SMTP
+    # Send verification email via SMTP if configured, or provide on-screen code fallback
     email_res = send_otp_email(to_email=email_clean, full_name=payload.full_name, otp_code=otp_code, purpose="Signup Verification")
-    if not email_res.get("sent"):
-        err_detail = email_res.get("message") or "Failed to deliver verification code to your email."
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=err_detail
-        )
-
-    return {
-        "success": True,
-        "requires_otp": True,
-        "email": email_clean,
-        "message": f"A 6-digit verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder to activate your account."
-    }
+    if email_res.get("sent"):
+        return {
+            "success": True,
+            "requires_otp": True,
+            "email": email_clean,
+            "smtp_configured": True,
+            "message": f"A 6-digit verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder to activate your account."
+        }
+    else:
+        return {
+            "success": True,
+            "requires_otp": True,
+            "email": email_clean,
+            "smtp_configured": False,
+            "verification_code": otp_code,
+            "message": f"Email delivery service (SMTP) is not configured in server environment. Verification code: {otp_code}."
+        }
 
 @router.post("/verify-otp")
 def verify_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)):
@@ -230,17 +234,19 @@ def resend_otp(payload: ResendOtpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     email_res = send_otp_email(to_email=email_clean, full_name=user.full_name, otp_code=otp_code, purpose="Signup Verification")
-    if not email_res.get("sent"):
-        err_detail = email_res.get("message") or "Failed to deliver verification code to your email."
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=err_detail
-        )
-
-    return {
-        "success": True,
-        "message": f"A new verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder."
-    }
+    if email_res.get("sent"):
+        return {
+            "success": True,
+            "smtp_configured": True,
+            "message": f"A new verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder."
+        }
+    else:
+        return {
+            "success": True,
+            "smtp_configured": False,
+            "verification_code": otp_code,
+            "message": f"Email delivery service (SMTP) is not configured in server environment. New verification code: {otp_code}."
+        }
 
 @router.post("/login")
 def login_user(payload: UserLoginRequest, db: Session = Depends(get_db)):

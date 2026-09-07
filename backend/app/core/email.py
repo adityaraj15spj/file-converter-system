@@ -157,11 +157,12 @@ If you did not request this email, please ignore it.
                 server.sendmail(from_email, [to_email], msg.as_string())
 
             logger.info(f"[EMAIL] Verification OTP email successfully dispatched via SMTP to {to_email}")
-            return {"sent": True, "message": "Email dispatched via SMTP"}
+            return {"sent": True, "smtp_configured": True, "message": "Email dispatched via SMTP"}
         except Exception as exc:
             logger.error(f"[EMAIL] SMTP dispatch failed: {exc}")
             return {
                 "sent": False,
+                "smtp_configured": True,
                 "error": str(exc),
                 "message": f"SMTP mail delivery failed ({str(exc)}). Please verify your SMTP credentials."
             }
@@ -169,11 +170,12 @@ If you did not request this email, please ignore it.
         import os
         if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("TESTING"):
             logger.info(f"[EMAIL TEST SIMULATION] Simulated OTP for {to_email}: {otp_code}")
-            return {"sent": True, "message": "Test simulated email"}
+            return {"sent": True, "smtp_configured": False, "message": "Test simulated email"}
         logger.warning(f"[EMAIL] SMTP is not configured. Email could not be sent to {to_email}.")
         return {
             "sent": False,
+            "smtp_configured": False,
             "error": "SMTP_NOT_CONFIGURED",
-            "message": "Email delivery service (SMTP) is not configured. Please configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD in your environment variables to receive real verification codes."
+            "message": "Email delivery service (SMTP) is not configured in environment variables."
         }
 
