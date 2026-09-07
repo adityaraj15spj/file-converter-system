@@ -38,8 +38,6 @@ export default function AuthModal({
   const [otp, setOtp] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [smtpConfigured, setSmtpConfigured] = useState(true);
-  const [fallbackCode, setFallbackCode] = useState("");
 
   // Profile fields
   const [editName, setEditName] = useState(currentUser?.full_name || "");
@@ -96,12 +94,10 @@ export default function AuthModal({
       const res = await api.register(fullName, email, password, role);
       if (res.requires_otp) {
         setOtpEmail(res.email || email);
-        setSmtpConfigured(res.smtp_configured !== false);
-        setFallbackCode(res.verification_code || "");
-        setOtp(res.verification_code || "");
+        setOtp("");
         setTab("verify_otp");
         setResendCooldown(60);
-        setSuccessMsg(res.message || "Verification code ready!");
+        setSuccessMsg(res.message || "A 6-digit verification code has been sent directly to your email.");
       } else {
         localStorage.setItem("token", res.access_token);
         onLoginSuccess(res.user);
@@ -143,12 +139,8 @@ export default function AuthModal({
     setSuccessMsg("");
     try {
       const res = await api.resendOtp(otpEmail);
-      setSmtpConfigured(res.smtp_configured !== false);
-      if (res.verification_code) {
-        setFallbackCode(res.verification_code);
-        setOtp(res.verification_code);
-      }
-      setSuccessMsg(res.message || "A new verification code has been dispatched.");
+      setOtp("");
+      setSuccessMsg(res.message || "A new verification code has been sent directly to your email.");
       setResendCooldown(60);
     } catch (err) {
       setError(err.message || "Failed to resend code.");
@@ -502,39 +494,10 @@ export default function AuthModal({
               }}>
                 {otpEmail}
               </div>
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "8px", lineHeight: 1.4 }}>
+                Please check your inbox and spam / junk folder. Enter the 6-digit code below to activate your account.
+              </p>
             </div>
-
-            {!smtpConfigured && fallbackCode && (
-              <div style={{
-                background: "rgba(245, 158, 11, 0.08)",
-                border: "1px solid rgba(245, 158, 11, 0.25)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                marginBottom: "16px",
-                textAlign: "left"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f59e0b", fontWeight: 700, fontSize: "0.82rem", marginBottom: "4px" }}>
-                  <AlertCircle size={15} />
-                  <span>Email Server (SMTP) Not Configured</span>
-                </div>
-                <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: "0 0 8px 0", lineHeight: 1.4 }}>
-                  SMTP is unconfigured in your host environment. Your verification code is provided below so registration can proceed:
-                </p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0, 0, 0, 0.3)", padding: "6px 12px", borderRadius: "6px" }}>
-                  <span style={{ fontFamily: "monospace", fontSize: "1.25rem", fontWeight: 800, letterSpacing: "5px", color: "#fbbf24" }}>
-                    {fallbackCode}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setOtp(fallbackCode)}
-                    style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                  >
-                    Auto-Fill
-                  </button>
-                </div>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp}>
               <div style={{ marginBottom: "18px" }}>

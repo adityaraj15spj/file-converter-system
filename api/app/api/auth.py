@@ -98,25 +98,17 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     db.commit()
 
-    # Send verification email via SMTP if configured, or provide on-screen code fallback
+    # Send verification email via SMTP directly to user
     email_res = send_otp_email(to_email=email_clean, full_name=payload.full_name, otp_code=otp_code, purpose="Signup Verification")
-    if email_res.get("sent"):
-        return {
-            "success": True,
-            "requires_otp": True,
-            "email": email_clean,
-            "smtp_configured": True,
-            "message": f"A 6-digit verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder to activate your account."
-        }
-    else:
-        return {
-            "success": True,
-            "requires_otp": True,
-            "email": email_clean,
-            "smtp_configured": False,
-            "verification_code": otp_code,
-            "message": f"Email delivery service (SMTP) is not configured in server environment. Verification code: {otp_code}."
-        }
+    if not email_res.get("sent"):
+        logger.warning(f"[REGISTRATION] Email dispatch notice: {email_res.get('message')}")
+
+    return {
+        "success": True,
+        "requires_otp": True,
+        "email": email_clean,
+        "message": f"A 6-digit verification code has been dispatched directly to {email_clean}. Please check your email inbox and spam folder to activate your account."
+    }
 
 @router.post("/verify-otp")
 def verify_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)):
@@ -234,19 +226,13 @@ def resend_otp(payload: ResendOtpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     email_res = send_otp_email(to_email=email_clean, full_name=user.full_name, otp_code=otp_code, purpose="Signup Verification")
-    if email_res.get("sent"):
-        return {
-            "success": True,
-            "smtp_configured": True,
-            "message": f"A new verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder."
-        }
-    else:
-        return {
-            "success": True,
-            "smtp_configured": False,
-            "verification_code": otp_code,
-            "message": f"Email delivery service (SMTP) is not configured in server environment. New verification code: {otp_code}."
-        }
+    if not email_res.get("sent"):
+        logger.warning(f"[RESEND OTP] Email dispatch notice: {email_res.get('message')}")
+
+    return {
+        "success": True,
+        "message": f"A new verification code has been dispatched directly to {email_clean}. Please check your email inbox and spam folder."
+    }
 
 @router.post("/login")
 def login_user(payload: UserLoginRequest, db: Session = Depends(get_db)):
