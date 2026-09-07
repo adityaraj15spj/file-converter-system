@@ -34,11 +34,8 @@ def test_signup_otp_and_verification_workflow():
     assert reg_data["success"] is True
     assert reg_data["requires_otp"] is True
     assert reg_data["email"] == test_email
-    assert "otp_preview" in reg_data
-    otp_code = reg_data["otp_preview"]
-    assert len(otp_code) == 6
 
-    # 2. Verify user exists in DB but is NOT yet verified
+    # 2. Verify user exists in DB and retrieve generated OTP from DB
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == test_email).first()
@@ -47,7 +44,8 @@ def test_signup_otp_and_verification_workflow():
 
         otp_record = db.query(EmailOTP).filter(EmailOTP.email == test_email, EmailOTP.is_used == False).first()
         assert otp_record is not None
-        assert otp_record.otp_code == otp_code
+        otp_code = otp_record.otp_code
+        assert len(otp_code) == 6
     finally:
         db.close()
 

@@ -133,25 +133,47 @@ If you did not request this email, please ignore it.
     # Check if SMTP is configured
     if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
         try:
+            from_email = settings.SMTP_FROM_EMAIL
+            if not from_email or from_email == "noreply@fileconverter.org":
+                from_email = settings.SMTP_USER or "noreply@fileconverter.org"
+
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+            msg["From"] = f"{settings.SMTP_FROM_NAME} <{from_email}>"
             msg["To"] = to_email
 
             msg.attach(MIMEText(plain_content, "plain"))
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+            if settings.SMTP_PORT == 465:
+                server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12)
+            else:
+                server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12)
                 if settings.SMTP_TLS:
                     server.starttls()
+
+            with server:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(settings.SMTP_FROM_EMAIL, [to_email], msg.as_string())
+                server.sendmail(from_email, [to_email], msg.as_string())
 
             logger.info(f"[EMAIL] Verification OTP email successfully dispatched via SMTP to {to_email}")
-            return {"sent": True, "simulated": False, "message": "Email dispatched via SMTP"}
+            return {"sent": True, "message": "Email dispatched via SMTP"}
         except Exception as exc:
-            logger.warning(f"[EMAIL] SMTP dispatch failed ({exc}). Falling back to simulation mode for {to_email}. OTP: {otp_code}")
-            return {"sent": False, "simulated": True, "message": f"SMTP failed: {str(exc)}", "error": str(exc)}
+            logger.error(f"[EMAIL] SMTP dispatch failed: {exc}")
+            return {
+                "sent": False,
+                "error": str(exc),
+                "message": f"SMTP mail delivery failed ({str(exc)}). Please verify your SMTP credentials."
+            }
     else:
-        logger.info(f"[EMAIL SIMULATION] SMTP not configured. OTP generated for {to_email}: {otp_code}")
-        return {"sent": False, "simulated": True, "message": "SMTP not configured (simulation mode)"}
+        import os
+        if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("TESTING"):
+            logger.info(f"[EMAIL TEST SIMULATION] Simulated OTP for {to_email}: {otp_code}")
+            return {"sent": True, "message": "Test simulated email"}
+        logger.warning(f"[EMAIL] SMTP is not configured. Email could not be sent to {to_email}.")
+        return {
+            "sent": False,
+            "error": "SMTP_NOT_CONFIGURED",
+            "message": "Email delivery service (SMTP) is not configured. Please configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD in your environment variables to receive real verification codes."
+        }
+

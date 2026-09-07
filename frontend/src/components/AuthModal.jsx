@@ -12,7 +12,9 @@ import {
   Send,
   RefreshCw,
   ArrowLeft,
-  Check
+  Check,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { api } from "../api";
 
@@ -30,11 +32,11 @@ export default function AuthModal({
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("Student");
+  const [showPassword, setShowPassword] = useState(false);
 
   // OTP Verification state
   const [otp, setOtp] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
-  const [devOtpPreview, setDevOtpPreview] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Profile fields
@@ -92,7 +94,6 @@ export default function AuthModal({
       const res = await api.register(fullName, email, password, role);
       if (res.requires_otp) {
         setOtpEmail(res.email || email);
-        setDevOtpPreview(res.otp_preview || "");
         setOtp("");
         setTab("verify_otp");
         setResendCooldown(60);
@@ -139,9 +140,6 @@ export default function AuthModal({
     try {
       const res = await api.resendOtp(otpEmail);
       setSuccessMsg(res.message || "A new verification code has been dispatched.");
-      if (res.otp_preview) {
-        setDevOtpPreview(res.otp_preview);
-      }
       setResendCooldown(60);
     } catch (err) {
       setError(err.message || "Failed to resend code.");
@@ -311,14 +309,32 @@ export default function AuthModal({
                 <div style={{ position: "relative" }}>
                   <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     className="input-field"
                     placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    style={{ paddingLeft: "36px" }}
+                    style={{ paddingLeft: "36px", paddingRight: "38px" }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      padding: "4px"
+                    }}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 
@@ -391,15 +407,36 @@ export default function AuthModal({
               <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "6px" }}>
                 Password (min 6 characters)
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                className="input-field"
-                placeholder="Choose a strong password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={6}
+                  className="input-field"
+                  placeholder="Choose a strong password (min 6 chars)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ paddingRight: "38px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    padding: "4px"
+                  }}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div style={{ marginBottom: "16px" }}>
@@ -457,37 +494,6 @@ export default function AuthModal({
                 {otpEmail}
               </div>
             </div>
-
-            {/* Dev / Demo mode auto-fill banner */}
-            {devOtpPreview && (
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                background: "rgba(14, 165, 233, 0.1)",
-                border: "1px solid rgba(14, 165, 233, 0.3)",
-                marginBottom: "18px"
-              }}>
-                <div>
-                  <div style={{ fontSize: "0.74rem", textTransform: "uppercase", fontWeight: 700, color: "#38bdf8" }}>
-                    Demo Mode OTP:
-                  </div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, letterSpacing: "3px", color: "#ffffff", fontFamily: "monospace" }}>
-                    {devOtpPreview}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setOtp(devOtpPreview)}
-                  style={{ fontSize: "0.78rem" }}
-                >
-                  Auto-fill Code
-                </button>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp}>
               <div style={{ marginBottom: "18px" }}>

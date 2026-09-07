@@ -278,17 +278,62 @@ export default function App() {
         {activeTab === "converter" && (
           <div>
             {/* Hero Description */}
-            <div className="fade-in-up" style={{ textAlign: "center", maxWidth: "780px", margin: "0 auto 32px auto" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "20px", background: "rgba(99, 102, 241, 0.12)", border: "1px solid rgba(99, 102, 241, 0.25)", color: "#a5b4fc", fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", marginBottom: "12px" }}>
-                <Sparkles size={14} />
-                <span>NITK Information Technology &bull; Data Preparation Utility</span>
+            <div className="fade-in-up" style={{ textAlign: "center", maxWidth: "860px", margin: "0 auto 36px auto", position: "relative" }}>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 16px",
+                borderRadius: "24px",
+                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)",
+                border: "1px solid rgba(99, 102, 241, 0.35)",
+                color: "#c7d2fe",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                marginBottom: "16px",
+                boxShadow: "0 0 20px rgba(99, 102, 241, 0.2)"
+              }}>
+                <Sparkles size={14} style={{ color: "#38bdf8" }} />
+                <span>NITK Surathkal &bull; Dept. of Information Technology</span>
               </div>
-              <h2 style={{ fontSize: "2.1rem", marginBottom: "10px", fontWeight: 800 }}>
-                Bidirectional CSV <span style={{ color: "var(--accent-indigo)" }}>&harr;</span> WEKA ARFF Engine
+
+              <h2 style={{
+                fontSize: "2.6rem",
+                marginBottom: "14px",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                lineHeight: 1.2,
+                background: "linear-gradient(135deg, #ffffff 30%, #94a3b8 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}>
+                Universal Dataset Converter &amp; Schema Studio
               </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
-                Lossless format conversion conforming strictly to RFC 4180 and WEKA 3.8+ specifications. Inspect inferred column types, customize nominal categories, and export verified datasets directly into the WEKA machine learning workbench.
+
+              <p style={{ color: "var(--text-secondary)", fontSize: "1.02rem", lineHeight: 1.65, maxWidth: "680px", margin: "0 auto 20px auto" }}>
+                Enterprise-grade lossless data preparation bridging <strong>RFC 4180 CSV</strong> and <strong>WEKA 3.8+ ARFF</strong>. Automatically classify attribute datatypes, customize nominal categories, and export verified datasets directly into the WEKA workbench.
               </p>
+
+              {/* Feature Value Pills */}
+              <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginTop: "12px" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "12px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid var(--border-subtle)", fontSize: "0.78rem", color: "#93c5fd" }}>
+                  <span style={{ color: "#60a5fa" }}>&bull;</span>
+                  <span>100% Lossless Roundtrip</span>
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "12px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid var(--border-subtle)", fontSize: "0.78rem", color: "#c4b5fd" }}>
+                  <span style={{ color: "#a855f7" }}>&bull;</span>
+                  <span>WEKA 3.8+ Certified Syntax</span>
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "12px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid var(--border-subtle)", fontSize: "0.78rem", color: "#86efac" }}>
+                  <span style={{ color: "#22c55e" }}>&bull;</span>
+                  <span>In-Memory Schema Extraction</span>
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "12px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid var(--border-subtle)", fontSize: "0.78rem", color: "#fde047" }}>
+                  <span style={{ color: "#eab308" }}>&bull;</span>
+                  <span>Line-Level Defect Reporting</span>
+                </div>
+              </div>
             </div>
 
             {/* Upload Zone */}

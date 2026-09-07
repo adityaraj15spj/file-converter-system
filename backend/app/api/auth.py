@@ -98,15 +98,20 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     db.commit()
 
-    # Send verification email via SMTP or fallback simulation
-    send_otp_email(to_email=email_clean, full_name=payload.full_name, otp_code=otp_code, purpose="Signup Verification")
+    # Send verification email via SMTP
+    email_res = send_otp_email(to_email=email_clean, full_name=payload.full_name, otp_code=otp_code, purpose="Signup Verification")
+    if not email_res.get("sent"):
+        err_detail = email_res.get("message") or "Failed to deliver verification code to your email."
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=err_detail
+        )
 
     return {
         "success": True,
         "requires_otp": True,
         "email": email_clean,
-        "message": f"A 6-digit verification code has been dispatched to {email_clean}. Please verify to activate your account.",
-        "otp_preview": otp_code if (not settings.SMTP_HOST or not settings.SMTP_USER) else None
+        "message": f"A 6-digit verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder to activate your account."
     }
 
 @router.post("/verify-otp")
@@ -224,12 +229,17 @@ def resend_otp(payload: ResendOtpRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     db.commit()
 
-    send_otp_email(to_email=email_clean, full_name=user.full_name, otp_code=otp_code, purpose="Signup Verification")
+    email_res = send_otp_email(to_email=email_clean, full_name=user.full_name, otp_code=otp_code, purpose="Signup Verification")
+    if not email_res.get("sent"):
+        err_detail = email_res.get("message") or "Failed to deliver verification code to your email."
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=err_detail
+        )
 
     return {
         "success": True,
-        "message": f"A new verification code has been dispatched to {email_clean}.",
-        "otp_preview": otp_code if (not settings.SMTP_HOST or not settings.SMTP_USER) else None
+        "message": f"A new verification code has been dispatched to {email_clean}. Please check your email inbox and spam folder."
     }
 
 @router.post("/login")
